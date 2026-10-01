@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de PDF para Markdown</title>
+    <!-- Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF.js para processar arquivos PDF no navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Tesseract.js para OCR (Reconhecimento Ótico de Caracteres em imagens) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- Biblioteca marcada para conversão e manipulação extra (opcional, mas útil para renderizar se necessário) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script>
+        // Configuração do Tailwind para personalizar o tema
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6', // blue-500
+                        secondary: '#1e40af', // blue-800
+                        dark: '#1e293b', // slate-800
+                        light: '#f8fafc', // slate-50
+                    }
+                }
+            }
+        }
+        
+        // Configuração vital para o pdf.js funcionar corretamente no navegador
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        /* Estilos personalizados para o carregador de arquivos e animações */
+        .drop-zone {
+            transition: all 0.3s ease;
+        }
+        .drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.02);
+        }
+        /* Esconder a barra de rolagem mas permitir rolagem */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Animação de carregamento */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Tema escuro para o editor/resultado */
+        .markdown-output {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1e293b;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Cabeçalho Principal -->
+    <header class="bg-white shadow-sm border-b border-gray-200 py-6">
+        <div class="container mx-auto px-4 max-w-5xl flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <h1 class="text-2xl font-bold text-gray-800">PDF para <span class="text-primary">Markdown</span></h1>
+            </div>
+            <div class="text-sm text-gray-500 hidden sm:block">
+                Processamento 100% local. Seus arquivos estão seguros.
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-5xl flex flex-col gap-6">
+        
+        <!-- Área de Upload de Arquivo -->
+        <section id="uploadSection" class="bg-white rounded-xl shadow-md p-8 border border-gray-100 text-center drop-zone border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
+            <input type="file" id="fileInput" accept=".pdf" class="hidden" />
+            <div id="dropZoneContent" class="flex flex-col items-center justify-center py-10 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">Clique para selecionar ou arraste um PDF aqui</h3>
+                <p class="text-gray-500 text-sm">Suporta apenas arquivos .pdf</p>
+                
+                <!-- Toggle de OCR -->
+                <div id="ocrToggleContainer" class="mt-6 flex items-center justify-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200 pointer-events-auto hover:bg-gray-100 transition-colors">
+                    <input type="checkbox" id="useOcr" class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary cursor-pointer">
+                    <label for="useOcr" class="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                        Usar OCR (Lê texto em imagens/scans)
+                    </label>
+                    <div class="group relative flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help pointer-events-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div class="absolute bottom-full mb-2 hidden group-hover:block w-56 bg-gray-800 text-white text-xs p-2 rounded shadow-lg text-center z-10 left-1/2 -translate-x-1/2">
+                            Atenção: Processar com OCR é bem mais lento, mas consegue identificar textos dentro de imagens ou PDFs que foram escaneados.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estado de Carregamento (Oculto por padrão) -->
+            <div id="loadingState" class="hidden flex-col items-center justify-center py-8">
+                <div class="loader mb-4"></div>
+                <h3 class="text-lg font-medium text-gray-700" id="loadingText">Analisando documento PDF...</h3>
+                <div class="w-full max-w-md bg-gray-200 rounded-full h-2.5 mt-4">
+                    <div id="progressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="progressText" class="text-sm text-gray-500 mt-2">0 / 0 páginas processadas</p>
+            </div>
+        </section>
+
+        <!-- Área de Resultados (Oculta por padrão) -->
+        <section id="resultSection" class="hidden flex-col gap-4 h-[600px]">
+            <!-- Controles do Resultado -->
+            <div class="flex flex-wrap items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="font-medium text-gray-700" id="fileNameDisplay">documento.pdf</span>
+                    <span class="text-sm text-gray-500 ml-2" id="fileStatsDisplay">(0 páginas)</span>
+                </div>
+                <div class="flex gap-2 mt-2 sm:mt-0">
+                    <button id="btnNewFile" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Novo Arquivo
+                    </button>
+                    <button id="btnCopy" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copiar Markdown
+                    </button>
+                    <button id="btnDownload" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Baixar .md
+                    </button>
+                </div>
+            </div>
+
+            <!-- Área de Texto do Markdown (Editável) -->
+            <div class="flex-grow bg-dark rounded-xl shadow-inner overflow-hidden border border-gray-700 relative">
+                <textarea id="markdownOutput" class="w-full h-full p-6 markdown-output focus:outline-none resize-none" spellcheck="false"></textarea>
+                
+                <!-- Notificação Flutuante de Cópia -->
+                <div id="copyNotification" class="absolute top-4 right-4 bg-gray-800 text-white text-sm px-3 py-1.5 rounded-md opacity-0 transition-opacity duration-300 pointer-events-none">
+                    Copiado para a área de transferência!
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="bg-white border-t border-gray-200 py-6 mt-auto">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>Este aplicativo extrai texto de PDFs usando <a href="https://mozilla.github.io/pdf.js/" class="text-primary hover:underline" target="_blank">PDF.js</a> da Mozilla.</p>
+            <p class="mt-1 text-xs">Nota: A extração converte texto. Tabelas complexas e imagens não são convertidas automaticamente para Markdown.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Referências de elementos DOM
+            const dropZone = document.getElementById('uploadSection');
+            const fileInput = document.getElementById('fileInput');
+            const dropZoneContent = document.getElementById('dropZoneContent');
+            const loadingState = document.getElementById('loadingState');
+            const resultSection = document.getElementById('resultSection');
+            const markdownOutput = document.getElementById('markdownOutput');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const fileStatsDisplay = document.getElementById('fileStatsDisplay');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            // Botões de ação
+            const btnNewFile = document.getElementById('btnNewFile');
+            const btnCopy = document.getElementById('btnCopy');
+            const btnDownload = document.getElementById('btnDownload');
+            const copyNotification = document.getElementById('copyNotification');
+            const useOcrCheckbox = document.getElementById('useOcr');
+
+            // Variável para guardar o texto markdown gerado
+            let currentMarkdownText = '';
+            let currentFileName = 'documento.md';
+
+            // --- EVENTOS DE DRAG AND DROP ---
+            
+            // Prevenir comportamentos padrão
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            // Destacar área de drop
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                dropZone.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                dropZone.classList.remove('dragover');
+            }
+
+            // Lidar com o arquivo solto
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+
+            // Lidar com clique para selecionar arquivo
+            dropZone.addEventListener('click', (e) => {
+                // Prevenir a abertura do seletor de arquivos se clicar na área do botão OCR
+                if (e.target.closest('#ocrToggleContainer')) return;
+
+                // Não abrir seletor se estiver carregando
+                if(loadingState.classList.contains('hidden')) {
+                    fileInput.click();
+                }
+            });
+
+            fileInput.addEventListener('change', function() {
+                handleFiles(this.files);
+            });
+
+            // --- PROCESSAMENTO DO ARQUIVO ---
+            
+            function handleFiles(files) {
+                if (files.length === 0) return;
+                
+                const file = files[0];
+                
+                // Validar se é PDF
+                if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                    alert('Por favor, selecione um arquivo PDF válido.');
+                    return;
+                }
+
+                // Atualizar UI para estado de carregamento
+                dropZoneContent.classList.add('hidden');
+                loadingState.classList.remove('hidden');
+                loadingState.classList.add('flex');
+                dropZone.classList.remove('cursor-pointer', 'hover:bg-gray-50');
+                
+                currentFileName = file.name.replace(/\.[^/.]+$/, "") + ".md";
+                fileNameDisplay.textContent = file.name;
+
+                // Iniciar leitura e conversão
+                processarPDF(file);
+            }
+
+            async function processarPDF(file) {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    
+                    // Carregar documento usando PDF.js
+                    const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
+                    const pdfDocument = await loadingTask.promise;
+                    
+                    const numPages = pdfDocument.numPages;
+                    fileStatsDisplay.textContent = `(${numPages} página${numPages > 1 ? 's' : ''})`;
+                    
+                    let markdownContent = `# Documento: ${file.name}\n\n`;
+                    let extractedText = '';
+                    
+                    const isOcrEnabled = useOcrCheckbox.checked;
+
+                    // OTIMIZAÇÃO 1: Criar o worker do Tesseract UMA VEZ fora do loop
+                    let ocrWorker = null;
+                    if (isOcrEnabled) {
+                        progressText.textContent = 'Inicializando motor OCR (isso ocorre apenas uma vez)...';
+                        ocrWorker = await Tesseract.createWorker('por+eng', 1, {
+                            logger: m => {
+                                if(m.status === 'recognizing text') {
+                                    const ocrProgress = Math.round(m.progress * 100);
+                                    progressText.textContent = `OCR em andamento: ${ocrProgress}% concluído...`;
+                                }
+                            }
+                        });
+                    }
+
+                    // Extrair texto página por página
+                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                        // Atualizar barra de progresso
+                        const progress = (pageNum / numPages) * 100;
+                        progressBar.style.width = `${progress}%`;
+                        
+                        if (isOcrEnabled) {
+                            progressText.textContent = `Lendo página ${pageNum} de ${numPages} com OCR (isso pode demorar)...`;
+                        } else {
+                            progressText.textContent = `${pageNum} / ${numPages} páginas processadas`;
+                        }
+
+                        const page = await pdfDocument.getPage(pageNum);
+                        let pageText = '';
+
+                        if (isOcrEnabled) {
+                            // MODO OCR: Renderizar a página em um canvas com boa resolução
+                            // OTIMIZAÇÃO 2: Reduzido de 2.0 para 1.5 para maior velocidade de leitura
+                            const scale = 1.5; 
+                            const viewport = page.getViewport({ scale: scale });
+                            
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+
+                            const renderContext = {
+                                canvasContext: context,
+                                viewport: viewport
+                            };
+                            
+                            // Aguarda a renderização do PDF no Canvas
+                            await page.render(renderContext).promise;
+                            
+                            // Executar OCR da imagem usando o worker reaproveitado
+                            progressText.textContent = `Lendo página ${pageNum} de ${numPages} com OCR...`;
+                            const { data: { text } } = await ocrWorker.recognize(canvas);
+                            pageText = text;
+
+                        } else {
+                            // MODO NORMAL: Extrai apenas a camada de texto selecionável do PDF
+                            const textContent = await page.getTextContent();
+                            
+                            // Heurística básica para formatar o texto
+                            // Em PDF.js, os itens de texto vêm em pedaços com coordenadas.
+                            // Esta é uma conversão simples. Uma conversão perfeita exigiria análise de layout complexa.
+                            
+                            let lastY = -1;
+                            
+                            // Classificar itens por posição Y (top-down) e depois X (left-right)
+                            const items = textContent.items;
+                            items.sort((a, b) => {
+                                // Tolerância para linhas na mesma altura
+                                if (Math.abs(b.transform[5] - a.transform[5]) > 5) {
+                                    return b.transform[5] - a.transform[5]; // Descendente Y
+                                }
+                                return a.transform[4] - b.transform[4]; // Ascendente X
+                            });
+
+                            for (const item of items) {
+                                // Ignorar itens vazios
+                                if (item.str.trim() === '') {
+                                    continue;
+                                }
+
+                                // Detectar nova linha com base na diferença de Y
+                                const currentY = item.transform[5];
+                                if (lastY !== -1 && Math.abs(lastY - currentY) > 10) {
+                                    // Se a diferença de altura for grande, pode ser um novo parágrafo
+                                    if (Math.abs(lastY - currentY) > 20) {
+                                        pageText += '\n\n';
+                                    } else {
+                                        pageText += '\n';
+                                    }
+                                } else if (lastY !== -1) {
+                                    // Adicionar espaço entre palavras na mesma linha se necessário
+                                    pageText += ' ';
+                                }
+                                
+                                // Tentar detectar títulos grosseiramente pelo tamanho da fonte (transform[0])
+                                // e negrito (depende da fonte, mais difícil de detectar de forma consistente)
+                                const fontSize = item.transform[0];
+                                let textStr = item.str;
+                                
+                                // Heurística simples: se a fonte for grande, pode ser um título
+                                if (fontSize > 16) {
+                                    textStr = `## ${textStr}`;
+                                } else if (fontSize > 14) {
+                                    textStr = `### ${textStr}`;
+                                }
+                                
+                                pageText += textStr;
+                                lastY = currentY;
+                            }
+                        }
+
+                        // Adicionar texto da página com separador
+                        markdownContent += `<!-- Página ${pageNum} -->\n\n${pageText}\n\n`;
+                    }
+
+                    // Encerrar o worker do OCR após processar todas as páginas para liberar memória
+                    if (ocrWorker) {
+                        await ocrWorker.terminate();
+                    }
+
+                    // Limpar formatação básica do Markdown
+                    // 1. Remover múltiplos espaços em branco excessivos
+                    markdownContent = markdownContent.replace(/[ \t]{2,}/g, ' ');
+                    // 2. Limpar múltiplas quebras de linha
+                    markdownContent = markdownContent.replace(/\n{3,}/g, '\n\n');
+
+                    currentMarkdownText = markdownContent;
+                    
+                    // Exibir resultados
+                    mostrarResultado();
+
+                } catch (error) {
+                    console.error('Erro ao processar PDF:', error);
+                    alert('Ocorreu um erro ao tentar processar este arquivo PDF. Ele pode estar corrompido ou protegido por senha.');
+                    resetInterface();
+                }
+            }
+
+            function mostrarResultado() {
+                // Preencher o textarea
+                markdownOutput.value = currentMarkdownText;
+                
+                // Esconder seção de upload, mostrar resultados
+                dropZone.classList.add('hidden');
+                resultSection.classList.remove('hidden');
+                resultSection.classList.add('flex');
+            }
+
+            function resetInterface() {
+                fileInput.value = '';
+                
+                // Resetar UI de upload
+                loadingState.classList.add('hidden');
+                loadingState.classList.remove('flex');
+                dropZoneContent.classList.remove('hidden');
+                dropZone.classList.add('cursor-pointer', 'hover:bg-gray-50');
+                
+                // Resetar progresso
+                progressBar.style.width = '0%';
+                progressText.textContent = '0 / 0 páginas processadas';
+                
+                // Esconder resultados
+                resultSection.classList.add('hidden');
+                resultSection.classList.remove('flex');
+                dropZone.classList.remove('hidden');
+            }
+
+            // --- AÇÕES DOS BOTÕES ---
+
+            // Botão Novo Arquivo
+            btnNewFile.addEventListener('click', resetInterface);
+
+            // Botão Copiar
+            btnCopy.addEventListener('click', () => {
+                // Pegar o valor atual do textarea, caso o usuário tenha editado
+                const textoParaCopiar = markdownOutput.value;
+                
+                // Usar a API do clipboard mais antiga que funciona bem em iframes
+                const textArea = document.createElement("textarea");
+                textArea.value = textoParaCopiar;
+                // Evitar rolagem na página principal
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        // Mostrar notificação
+                        copyNotification.style.opacity = '1';
+                        setTimeout(() => {
+                            copyNotification.style.opacity = '0';
+                        }, 2000);
+                    } else {
+                        console.error('Falha ao copiar usando execCommand');
+                    }
+                } catch (err) {
+                    console.error('Erro ao copiar', err);
+                }
+                
+                document.body.removeChild(textArea);
+            });
+
+            // Botão Baixar
+            btnDownload.addEventListener('click', () => {
+                // Pegar texto atualizado caso o usuário tenha editado
+                const conteudo = markdownOutput.value;
+                
+                // Criar blob
+                const blob = new Blob([conteudo], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                // Criar link temporário para download
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = currentFileName;
+                
+                document.body.appendChild(link);
+                link.click();
+                
+                // Limpeza
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>
