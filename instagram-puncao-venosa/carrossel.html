@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<style>@font-face{font-family:'Archivo';src:url(archivo-latin.woff2) format('woff2');font-weight:100 900;font-stretch:62% 125%}</style>
+<style>
+:root{--ink:#0A1A2F;--paper:#F5F1EA;--red:#D7263D;--red-d:#9E1029;--teal:#0E9F8E;--teal-l:#D5F0EB;--mute:#6B7480;--line:#E2DCD1}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:7560px;height:1350px}
+body{font-family:'Archivo',sans-serif;color:var(--ink);position:relative;overflow:hidden;background:var(--paper)}
+.slide{position:absolute;top:0;width:1080px;height:1350px;padding:84px 80px 0;overflow:hidden}
+.dark{background:var(--ink);color:#fff}
+.cond{font-stretch:72%}
+.tag{display:inline-flex;align-items:center;gap:12px;font-weight:700;font-size:24px;letter-spacing:3px;text-transform:uppercase}
+.tag i{width:14px;height:14px;border-radius:50%;background:var(--red);display:inline-block}
+.ghost{position:absolute;right:56px;top:40px;font-size:300px;font-weight:900;font-stretch:72%;line-height:1;color:transparent;-webkit-text-stroke:3px #E9E3D9;z-index:0}
+.slide>*:not(.ghost){position:relative;z-index:1}
+.slide>.vis,.slide>.foot{position:absolute}
+.chip{display:inline-block;font-weight:800;font-size:22px;letter-spacing:3px;padding:8px 18px;border-radius:8px;text-transform:uppercase}
+.chip.old{background:#F6D9DC;color:var(--red-d)}
+.chip.new{background:var(--teal);color:#fff}
+.old-t{font-stretch:72%;font-weight:800;font-size:66px;line-height:1.02;color:#9AA2AC;margin-top:16px;position:relative;display:inline}
+.old-t s{text-decoration:none;background:linear-gradient(var(--red),var(--red)) 0 55%/100% 7px no-repeat}
+.new-t{font-stretch:72%;font-weight:900;font-size:88px;line-height:.95;margin-top:16px;letter-spacing:-.5px}
+.new-t em{font-style:normal;color:var(--teal)}
+.note{font-size:27px;line-height:1.35;color:#3D4756;margin-top:22px;max-width:900px}
+.note b{color:var(--ink)}
+.foot{position:absolute;left:80px;right:80px;top:1186px;display:flex;justify-content:space-between;font-weight:700;font-size:22px;letter-spacing:2px;color:var(--mute)}
+.dark .foot{color:#8C9AAE}
+#vein{position:absolute;left:0;top:0;width:7560px;height:1350px;pointer-events:none;z-index:5}
+.vis{position:absolute;left:80px;right:80px;top:770px;height:380px}
+</style></head><body>
+
+<!-- 01 CAPA -->
+<section class="slide dark" style="left:0">
+  <div class="tag"><i></i>Punção venosa · INS 2024</div>
+  <h1 class="cond" style="font-weight:900;font-size:180px;line-height:.88;margin-top:80px;letter-spacing:-1px">5 hábitos<br>que a<br>evidência já<br><span style="display:inline-block;background:var(--red);padding:0 20px 14px;margin:22px 0 0 -8px;line-height:1">aposentou.</span></h1>
+  <p style="font-size:34px;line-height:1.3;margin-top:44px;color:#C9D3E0;max-width:760px">Quantos você ainda pratica no plantão?<br><b style="color:#fff">Conta nos comentários.</b></p>
+  <div class="foot"><span></span><span style="color:#fff">ARRASTE E SIGA A VEIA →</span></div>
+</section>
+
+<!-- 02 TENTATIVAS -->
+<section class="slide" style="left:1080px">
+  <div class="ghost">01</div>
+  <div class="tag"><i></i>Hábito 01</div>
+  <div style="margin-top:56px"><span class="chip old">Antes</span></div>
+  <div style="margin-top:14px"><span class="old-t"><s>“Tento até conseguir.”</s></span></div>
+  <div style="margin-top:44px"><span class="chip new">Agora</span></div>
+  <div class="new-t">Máximo de <em>2 tentativas</em><br>por profissional.<br><em>4 no total.</em></div>
+  <p class="note">Cada tentativa a mais lesa uma veia que o paciente <b>vai precisar depois</b>.</p>
+  <div class="vis" style="top:820px;display:flex;align-items:flex-start;gap:20px">
+    <div style="text-align:center">
+      <div style="display:flex;gap:20px">
+        <div class="dot r">1</div><div class="dot r">2</div>
+      </div>
+      <div class="brk">você</div>
+    </div>
+    <div style="text-align:center">
+      <div style="display:flex;gap:20px">
+        <div class="dot t">3</div><div class="dot t">4</div>
+      </div>
+      <div class="brk t">colega mais<br>experiente</div>
+    </div>
+    <div class="stop">
+      <b>Não deu?</b><br>Pare. Reavalie com a equipe: ultrassom ou outro dispositivo.
+    </div>
+  </div>
+  <style>
+    .dot{width:116px;height:116px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:48px;font-stretch:72%;color:#fff}
+    .dot.r{background:var(--red);box-shadow:0 0 0 10px #F6D9DC}
+    .dot.t{background:var(--teal);box-shadow:0 0 0 10px var(--teal-l)}
+    .brk{margin-top:30px;border-top:4px solid var(--red);padding-top:12px;font-weight:700;font-size:24px;color:var(--red-d);text-transform:uppercase;letter-spacing:2px;line-height:1.2}
+    .brk.t{border-color:var(--teal);color:#07695E}
+    .stop{margin-left:14px;flex:1;background:var(--ink);color:#fff;border-radius:22px;padding:24px 26px;font-size:25px;line-height:1.3;align-self:flex-start;margin-top:0}
+    .stop b{font-size:38px;font-stretch:72%;font-weight:900;color:#FF8A95}
+  </style>
+  <div class="foot"><span>02 / 07</span><span>INS 2024</span></div>
+</section>
+
+<!-- 03 ULTRASSOM -->
+<section class="slide" style="left:2160px">
+  <div class="ghost">02</div>
+  <div class="tag"><i></i>Hábito 02</div>
+  <div style="margin-top:56px"><span class="chip old">Antes</span></div>
+  <div style="margin-top:14px"><span class="old-t"><s>“Acesso difícil? Vou no tato.”</s></span></div>
+  <div style="margin-top:44px"><span class="chip new">Agora</span></div>
+  <div class="new-t">Acesso venoso difícil<br>pede <em>ultrassom</em> ou outra<br>tecnologia de <em>visualização</em>.</div>
+  <div class="vis" style="top:760px;height:400px">
+    <svg width="920" height="400" viewBox="0 0 920 400">
+      <defs>
+        <filter id="speck"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .75  0 0 0 0 .75  0 0 0 0 .75  0 0 0 .55 0"/></filter>
+        <radialGradient id="usg" cx="50%" cy="20%" r="90%"><stop offset="0" stop-color="#4A4F57"/><stop offset="1" stop-color="#0D0F12"/></radialGradient>
+        <clipPath id="scr"><rect x="0" y="0" width="560" height="400" rx="26"/></clipPath>
+      </defs>
+      <g clip-path="url(#scr)">
+        <rect width="560" height="400" fill="url(#usg)"/>
+        <rect width="560" height="400" filter="url(#speck)" opacity=".7"/>
+        <rect width="560" height="400" fill="#000" opacity=".25"/>
+        <!-- veia: oval, compressível -->
+        <ellipse cx="190" cy="200" rx="96" ry="66" fill="#050505" stroke="#8E949C" stroke-width="3"/>
+        <!-- artéria: redonda, parede espessa -->
+        <circle cx="400" cy="230" r="54" fill="#050505" stroke="#D9DDE2" stroke-width="9"/>
+        <text x="22" y="40" fill="#9AA3AD" font-size="20" font-family="Archivo" letter-spacing="2">L 12MHz · 3,0 cm</text>
+        <!-- escala -->
+        <g fill="#9AA3AD"><rect x="536" y="70" width="4" height="4"/><rect x="536" y="150" width="4" height="4"/><rect x="536" y="230" width="4" height="4"/><rect x="536" y="310" width="4" height="4"/></g>
+      </g>
+      <line x1="190" y1="200" x2="618" y2="110" stroke="var(--teal)" stroke-width="3"/>
+      <circle cx="190" cy="200" r="7" fill="var(--teal)"/>
+      <line x1="400" y1="230" x2="618" y2="290" stroke="var(--red)" stroke-width="3"/>
+      <circle cx="400" cy="230" r="7" fill="var(--red)"/>
+      <text x="628" y="102" font-size="34" font-weight="900" font-family="Archivo" style="font-stretch:72%" fill="#07695E">VEIA</text>
+      <text x="628" y="134" font-size="23" font-family="Archivo" fill="#3D4756">oval, colaba ao</text>
+      <text x="628" y="162" font-size="23" font-family="Archivo" fill="#3D4756">comprimir com a sonda</text>
+      <text x="628" y="282" font-size="34" font-weight="900" font-family="Archivo" style="font-stretch:72%" fill="var(--red-d)">ARTÉRIA</text>
+      <text x="628" y="314" font-size="23" font-family="Archivo" fill="#3D4756">redonda, parede</text>
+      <text x="628" y="342" font-size="23" font-family="Archivo" fill="#3D4756">espessa e pulsátil</text>
+    </svg>
+  </div>
+  <div class="foot"><span>03 / 07</span><span>INS 2024</span></div>
+</section>
+
+<!-- 04 ANTISSEPSIA -->
+<section class="slide" style="left:3240px">
+  <div class="ghost">03</div>
+  <div class="tag"><i></i>Hábito 03</div>
+  <div style="margin-top:56px"><span class="chip old">Antes</span></div>
+  <div style="margin-top:14px"><span class="old-t"><s>Assoprar a clorexidina</s><br><s>e palpar a veia de novo.</s></span></div>
+  <div style="margin-top:44px"><span class="chip new">Agora</span></div>
+  <div class="new-t">Deixe <em>secar sozinha</em>.<br>Depois, <em>não toque mais</em><br>no sítio.</div>
+  <div class="vis" style="top:800px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px;height:auto;align-items:start">
+    <div class="step"><svg viewBox="0 0 80 80" width="76" height="76" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 30h46l-10-10M66 50H20l10 10"/></svg>
+      <h4>Friccione</h4><p>Clorexidina alcoólica <b>&gt;0,5%</b>, pelo tempo do fabricante.</p></div>
+    <div class="step"><svg viewBox="0 0 80 80" width="76" height="76" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10h36M22 70h36M26 10c0 18 28 22 28 30s-28 12-28 30M54 10c0 18-28 22-28 30s28 12 28 30"/><path d="M32 62h16" stroke-width="7"/></svg>
+      <h4>Espere secar</h4><p>Sem assoprar, abanar ou secar com gaze.</p></div>
+    <div class="step"><svg viewBox="0 0 80 80" width="76" height="76" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="40" cy="40" r="30"/><path d="M19 19l42 42"/></svg>
+      <h4>Não palpe</h4><p>Precisou palpar de novo? Só com <b>luva estéril</b>.</p></div>
+  </div>
+  <style>
+    .step{background:#fff;border-radius:24px;padding:28px 26px;border:2px solid var(--line)}
+    .step svg{color:var(--teal)}
+    .step h4{font-stretch:72%;font-weight:900;font-size:40px;margin-top:14px}
+    .step p{font-size:23px;line-height:1.32;color:#3D4756;margin-top:8px}
+  </style>
+  <div class="foot"><span>04 / 07</span><span>INS 2024</span></div>
+</section>
+
+<!-- 05 CALIBRE -->
+<section class="slide" style="left:4320px">
+  <div class="ghost">04</div>
+  <div class="tag"><i></i>Hábito 04</div>
+  <div style="margin-top:56px"><span class="chip old">Antes</span></div>
+  <div style="margin-top:14px"><span class="old-t"><s>“Cateter grosso, por garantia.”</s></span></div>
+  <div style="margin-top:44px"><span class="chip new">Agora</span></div>
+  <div class="new-t">O <em>menor calibre</em> que<br>atenda à terapia. Cateter<br>com <em>até 45%</em> da veia.</div>
+  <div class="vis" style="top:735px;height:430px">
+    <svg width="920" height="430" viewBox="0 0 920 430">
+      <defs><radialGradient id="lum" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#F3A3AC"/><stop offset="1" stop-color="#E0596A"/></radialGradient></defs>
+      <g font-family="Archivo">
+      <!-- ruim -->
+      <circle cx="135" cy="160" r="125" fill="url(#lum)" stroke="var(--red-d)" stroke-width="11"/>
+      <circle cx="135" cy="160" r="104" fill="#fff" stroke="#C9CFD6" stroke-width="4"/>
+      <circle cx="135" cy="160" r="34" fill="#EEF1F4"/>
+      <circle cx="232" cy="56" r="32" fill="var(--red)"/><path d="M219 43l26 26M245 43l-26 26" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+      <text x="135" y="338" text-anchor="middle" font-weight="900" font-size="44" style="font-stretch:72%" fill="var(--red-d)">83% DA VEIA</text>
+      <text x="135" y="372" text-anchor="middle" font-size="22" fill="#3D4756">sangue não circula ao redor:</text>
+      <text x="135" y="400" text-anchor="middle" font-size="22" font-weight="700" fill="var(--red-d)">mais flebite e trombose</text>
+      <!-- bom -->
+      <circle cx="455" cy="160" r="125" fill="url(#lum)" stroke="var(--red-d)" stroke-width="11"/>
+      <circle cx="455" cy="160" r="50" fill="#fff" stroke="#C9CFD6" stroke-width="4"/>
+      <circle cx="455" cy="160" r="16" fill="#EEF1F4"/>
+      <circle cx="552" cy="56" r="32" fill="var(--teal)"/><path d="M537 57l10 10 20-21" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="455" y="338" text-anchor="middle" font-weight="900" font-size="44" style="font-stretch:72%" fill="#07695E">≤ 45% DA VEIA</text>
+      <text x="455" y="372" text-anchor="middle" font-size="22" fill="#3D4756">o sangue flui ao redor</text>
+      <text x="455" y="400" text-anchor="middle" font-size="22" font-weight="700" fill="#07695E">e dilui a infusão</text>
+      <!-- legenda -->
+      <line x1="648" y1="40" x2="648" y2="400" stroke="var(--line)" stroke-width="3"/>
+      <text x="680" y="118" font-size="64" font-weight="900" style="font-stretch:72%" fill="var(--ink)">20–24G</text>
+      <text x="680" y="156" font-size="23" fill="#3D4756">atendem à maioria</text>
+      <text x="680" y="184" font-size="23" fill="#3D4756">das terapias</text>
+      <text x="680" y="260" font-size="20" font-weight="700" fill="#6B7480" letter-spacing="2">COMO MEDIR</text>
+      <text x="680" y="292" font-size="21" fill="#6B7480">diâmetro do cateter</text>
+      <text x="680" y="320" font-size="21" fill="#6B7480">÷ diâmetro da veia,</text>
+      <text x="680" y="348" font-size="21" fill="#6B7480">no ultrassom</text>
+      </g>
+    </svg>
+  </div>
+  <div class="foot"><span>05 / 07</span><span>INS 2024</span></div>
+</section>
+
+<!-- 06 TROCA -->
+<section class="slide" style="left:5400px">
+  <div class="ghost">05</div>
+  <div class="tag"><i></i>Hábito 05</div>
+  <div style="margin-top:56px"><span class="chip old">Antes</span></div>
+  <div style="margin-top:14px"><span class="old-t"><s>“Troca a cada 72–96 h.”</s></span></div>
+  <div style="margin-top:44px"><span class="chip new">Agora</span></div>
+  <div class="new-t">Retire por <em>indicação<br>clínica</em>, não pelo<br>calendário.</div>
+  <p class="note">Avalie o sítio com frequência e pergunte todo dia: <b>esse cateter ainda é necessário?</b></p>
+  <div class="vis" style="top:850px;height:280px">
+    <div style="font-weight:800;font-size:22px;letter-spacing:3px;color:var(--mute);text-transform:uppercase">Retire quando houver</div>
+    <div class="chips">
+      <span>Dor ou desconforto</span><span>Flebite</span><span>Infiltração</span><span>Oclusão</span><span>Suspeita de infecção</span><span class="end">Fim da terapia</span>
+    </div>
+  </div>
+  <style>
+    .chips{display:flex;flex-wrap:wrap;gap:14px;margin-top:20px}
+    .chips span{font-size:27px;font-weight:700;padding:14px 24px;border-radius:40px;background:#fff;border:2px solid var(--line)}
+    .chips span.end{background:var(--teal);color:#fff;border-color:var(--teal)}
+  </style>
+  <div class="foot"><span>06 / 07</span><span>INS 2024</span></div>
+</section>
+
+<!-- 07 CHECKLIST -->
+<section class="slide dark" style="left:6480px">
+  <div class="tag"><i></i>Salve para o plantão</div>
+  <h2 class="cond" style="font-weight:900;font-size:118px;line-height:.9;margin-top:46px">Checklist antes<br>de <span style="color:#5FD3C1">puncionar</span></h2>
+  <ul class="ck">
+    <li>Higiene das mãos + técnica asséptica sem toque</li>
+    <li>Garrote de uso único</li>
+    <li>Evite flexuras (e membros inferiores no adulto)</li>
+    <li>Menor calibre possível, até 45% da veia</li>
+    <li>Clorexidina alcoólica &gt;0,5%, secagem completa</li>
+    <li>Máx. 2 tentativas por profissional, 4 no total</li>
+    <li>Acesso difícil? Ultrassom</li>
+  </ul>
+  <p style="font-size:20px;line-height:1.4;color:#8C9AAE;margin-top:40px">Fonte: Infusion Nurses Society. <i>Infusion Therapy Standards of Practice</i>, 9ª ed. J Infus Nurs. 2024;47(1S).</p>
+  <style>
+    .ck{list-style:none;margin-top:44px}
+    .ck li{font-size:34px;line-height:1.25;padding:20px 0 20px 66px;position:relative;border-bottom:1px solid #1F3350}
+    .ck li:before{content:"";position:absolute;left:0;top:19px;width:38px;height:38px;border-radius:10px;border:3px solid #5FD3C1}
+    .ck li:after{content:"";position:absolute;left:12px;top:25px;width:10px;height:20px;border:solid #5FD3C1;border-width:0 5px 5px 0;transform:rotate(45deg)}
+  </style>
+  <div class="foot"><span>07 / 07</span><span style="color:#fff">ENVIE PARA SUA EQUIPE ↗</span></div>
+</section>
+
+<svg id="vein" viewBox="0 0 7560 1350"></svg>
+
+<script>
+// Veia contínua atravessando todo o carrossel
+const svg=document.getElementById('vein'),NS='http://www.w3.org/2000/svg';
+const y0=1268,A=16,P=540,x0=-130,x1=7300;
+let d=`M${x0} ${y0}`;
+let xe=x0;for(let x=x0;x<x1;x+=P/2){xe=x+P/2;const s=((x-x0)/(P/2))%2?1:-1;d+=` Q${x+P/4} ${y0+s*A*2} ${x+P/2} ${y0}`}
+const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e};
+mk('path',{d,fill:'none',stroke:'#7E0B20','stroke-width':34,'stroke-linecap':'round'});
+const main=mk('path',{d,fill:'none',stroke:'#C81E38','stroke-width':26,'stroke-linecap':'round'});
+mk('path',{d,fill:'none',stroke:'#F06C7E','stroke-width':6,'stroke-linecap':'round',opacity:.7,transform:'translate(0,-6)'});
+// hemácias ao longo da veia
+const L=main.getTotalLength();
+for(let s=60;s<L-40;s+=95){const p=main.getPointAtLength(s);mk('ellipse',{cx:p.x,cy:p.y,rx:7,ry:4.5,fill:'#FFB3BD',opacity:.85})}
+// cateter entrando na veia (capa)
+const g=mk('g',{transform:`translate(560 ${y0-4}) rotate(16)`});
+const add=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);g.appendChild(e)};
+add('rect',{x:-300,y:-3,width:300,height:6,rx:3,fill:'#E6EBF1'});           // cânula
+add('rect',{x:-380,y:-15,width:90,height:30,rx:8,fill:'#3B82F6'});          // canhão 22G
+add('path',{d:'M-370 -15 L-340 -62 L-318 -62 L-330 -15Z',fill:'#3B82F6'});  // aleta
+add('path',{d:'M-370 15 L-340 62 L-318 62 L-330 15Z',fill:'#3B82F6'});
+add('rect',{x:-470,y:-11,width:92,height:22,rx:6,fill:'#93A4BA'});          // conector
+// fim: gota com check
+const e=mk('g',{transform:`translate(${xe} ${y0})`});
+const c=document.createElementNS(NS,'circle');c.setAttribute('r',46);c.setAttribute('stroke','#0A1A2F');c.setAttribute('stroke-width',8);c.setAttribute('fill','#5FD3C1');e.appendChild(c);
+const k=document.createElementNS(NS,'path');k.setAttribute('d','M-18 1l12 12 24-26');k.setAttribute('stroke','#0A1A2F');k.setAttribute('stroke-width',8);k.setAttribute('fill','none');k.setAttribute('stroke-linecap','round');k.setAttribute('stroke-linejoin','round');e.appendChild(k);
+</script>
+</body></html>
