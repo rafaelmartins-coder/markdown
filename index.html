@@ -1,540 +1,766 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversor de PDF para Markdown</title>
-    <!-- Tailwind CSS para estilização rápida e responsiva -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PDF.js para processar arquivos PDF no navegador -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- Tesseract.js para OCR (Reconhecimento Ótico de Caracteres em imagens) -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <!-- Biblioteca marcada para conversão e manipulação extra (opcional, mas útil para renderizar se necessário) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <script>
-        // Configuração do Tailwind para personalizar o tema
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3b82f6', // blue-500
-                        secondary: '#1e40af', // blue-800
-                        dark: '#1e293b', // slate-800
-                        light: '#f8fafc', // slate-50
-                    }
-                }
-            }
-        }
-        
-        // Configuração vital para o pdf.js funcionar corretamente no navegador
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    </script>
-    <style>
-        /* Estilos personalizados para o carregador de arquivos e animações */
-        .drop-zone {
-            transition: all 0.3s ease;
-        }
-        .drop-zone.dragover {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
-            transform: scale(1.02);
-        }
-        /* Esconder a barra de rolagem mas permitir rolagem */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        
-        /* Animação de carregamento */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Tema escuro para o editor/resultado */
-        .markdown-output {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #1e293b;
-            color: #e2e8f0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF → Markdown Turbo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --ink:#1b2430; --muted:#667085; --line:#e3e6ea;
+  --brand:#2563eb; --brand-ink:#fff; --ok:#16a34a; --warn:#b45309; --err:#dc2626;
+  --code-bg:#0f172a; --code-ink:#e2e8f0; --soft:#eef2ff;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0e1116; --card:#161b22; --ink:#e6edf3; --muted:#8b98a8; --line:#262d36;
+    --brand:#3b82f6; --soft:#1b2540; --code-bg:#0b0f14; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 16px 0;max-width:1000px;margin:0 auto}
+h1{margin:0;font-size:24px}
+h1 span{color:var(--brand)}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+main{max-width:1000px;margin:0 auto;padding:16px;display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+#drop{border:2px dashed var(--line);text-align:center;padding:36px 16px;cursor:pointer;transition:.15s}
+#drop:hover,#drop.over{border-color:var(--brand);background:var(--soft)}
+#drop strong{font-size:17px}
+#drop p{margin:6px 0 0;color:var(--muted);font-size:14px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 16px}
+.opts label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.opts label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:14px}
+select{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
+button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--brand)}
+button.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+button.primary:hover{filter:brightness(1.1)}
+.hidden{display:none!important}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 6px}
+.bar>div{height:100%;width:0;background:var(--brand);transition:width .1s}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.muted{color:var(--muted);font-size:13px}
+.stats{display:flex;flex-wrap:wrap;gap:6px}
+.pill{background:var(--soft);color:var(--ink);border-radius:999px;padding:2px 10px;font-size:12.5px}
+.tabs{display:flex;gap:4px;margin:12px 0 8px}
+.tabs button{padding:5px 12px}
+.tabs button.on{background:var(--soft);border-color:var(--brand)}
+textarea#out{width:100%;height:560px;resize:vertical;background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);border-radius:10px;padding:14px;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace}
+#preview{height:560px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px 20px}
+#preview img{max-width:100%}
+#preview table{border-collapse:collapse}
+#preview th,#preview td{border:1px solid var(--line);padding:4px 8px}
+#toast{position:fixed;right:16px;bottom:16px;background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;opacity:0;transition:.25s;pointer-events:none}
+#toast.on{opacity:1}
+footer{max-width:1000px;margin:0 auto;padding:0 16px 24px;color:var(--muted);font-size:12.5px}
+</style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
+<body>
+<header>
+  <h1>PDF → <span>Markdown</span> Turbo</h1>
+  <p class="sub">Texto, títulos, listas, tabelas, imagens e gráficos. Tudo local no seu navegador, com várias páginas em paralelo.</p>
+</header>
 
-    <!-- Cabeçalho Principal -->
-    <header class="bg-white shadow-sm border-b border-gray-200 py-6">
-        <div class="container mx-auto px-4 max-w-5xl flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <h1 class="text-2xl font-bold text-gray-800">PDF para <span class="text-primary">Markdown</span></h1>
-            </div>
-            <div class="text-sm text-gray-500 hidden sm:block">
-                Processamento 100% local. Seus arquivos estão seguros.
-            </div>
-        </div>
-    </header>
+<main>
+  <section class="card" id="drop" tabindex="0">
+    <input type="file" id="file" accept=".pdf,application/pdf" hidden>
+    <strong>Clique ou arraste um PDF aqui</strong>
+    <p>Nada é enviado para a internet; o arquivo é processado na sua máquina.</p>
+  </section>
 
-    <!-- Conteúdo Principal -->
-    <main class="flex-grow container mx-auto px-4 py-8 max-w-5xl flex flex-col gap-6">
-        
-        <!-- Área de Upload de Arquivo -->
-        <section id="uploadSection" class="bg-white rounded-xl shadow-md p-8 border border-gray-100 text-center drop-zone border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
-            <input type="file" id="fileInput" accept=".pdf" class="hidden" />
-            <div id="dropZoneContent" class="flex flex-col items-center justify-center py-10 pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                <h3 class="text-xl font-semibold text-gray-700 mb-2">Clique para selecionar ou arraste um PDF aqui</h3>
-                <p class="text-gray-500 text-sm">Suporta apenas arquivos .pdf</p>
-                
-                <!-- Toggle de OCR -->
-                <div id="ocrToggleContainer" class="mt-6 flex items-center justify-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200 pointer-events-auto hover:bg-gray-100 transition-colors">
-                    <input type="checkbox" id="useOcr" class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary cursor-pointer">
-                    <label for="useOcr" class="text-sm font-medium text-gray-700 cursor-pointer select-none">
-                        Usar OCR (Lê texto em imagens/scans)
-                    </label>
-                    <div class="group relative flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 cursor-help pointer-events-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div class="absolute bottom-full mb-2 hidden group-hover:block w-56 bg-gray-800 text-white text-xs p-2 rounded shadow-lg text-center z-10 left-1/2 -translate-x-1/2">
-                            Atenção: Processar com OCR é bem mais lento, mas consegue identificar textos dentro de imagens ou PDFs que foram escaneados.
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Estado de Carregamento (Oculto por padrão) -->
-            <div id="loadingState" class="hidden flex-col items-center justify-center py-8">
-                <div class="loader mb-4"></div>
-                <h3 class="text-lg font-medium text-gray-700" id="loadingText">Analisando documento PDF...</h3>
-                <div class="w-full max-w-md bg-gray-200 rounded-full h-2.5 mt-4">
-                    <div id="progressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
-                </div>
-                <p id="progressText" class="text-sm text-gray-500 mt-2">0 / 0 páginas processadas</p>
-            </div>
-        </section>
+  <section class="card">
+    <div class="opts">
+      <label>Núcleos usados em paralelo
+        <select id="optThreads"></select>
+      </label>
+      <label>OCR (para páginas escaneadas)
+        <select id="optOcr">
+          <option value="auto">Automático (só páginas sem texto)</option>
+          <option value="force">Forçar em todas as páginas</option>
+          <option value="off">Desligado</option>
+        </select>
+      </label>
+      <label>Idioma do OCR
+        <select id="optLang">
+          <option value="por+eng">Português + Inglês</option>
+          <option value="por">Português</option>
+          <option value="eng">Inglês</option>
+          <option value="spa">Espanhol</option>
+          <option value="fra">Francês</option>
+          <option value="deu">Alemão</option>
+        </select>
+      </label>
+      <label class="chk"><input type="checkbox" id="optFigs" checked> Extrair imagens e gráficos</label>
+      <label class="chk"><input type="checkbox" id="optMarks"> Marcar páginas (&lt;!-- Página N --&gt;)</label>
+      <label class="chk"><input type="checkbox" id="optEmbed"> Embutir imagens no .md (base64)</label>
+    </div>
+    <p class="muted" id="hw" style="margin:10px 0 0"></p>
+  </section>
 
-        <!-- Área de Resultados (Oculta por padrão) -->
-        <section id="resultSection" class="hidden flex-col gap-4 h-[600px]">
-            <!-- Controles do Resultado -->
-            <div class="flex flex-wrap items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="font-medium text-gray-700" id="fileNameDisplay">documento.pdf</span>
-                    <span class="text-sm text-gray-500 ml-2" id="fileStatsDisplay">(0 páginas)</span>
-                </div>
-                <div class="flex gap-2 mt-2 sm:mt-0">
-                    <button id="btnNewFile" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Novo Arquivo
-                    </button>
-                    <button id="btnCopy" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Copiar Markdown
-                    </button>
-                    <button id="btnDownload" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Baixar .md
-                    </button>
-                </div>
-            </div>
+  <section class="card hidden" id="progress">
+    <div class="row"><strong id="pTitle">Convertendo…</strong><button id="btnCancel">Cancelar</button></div>
+    <div class="bar"><div id="pBar"></div></div>
+    <div class="muted" id="pText"></div>
+  </section>
 
-            <!-- Área de Texto do Markdown (Editável) -->
-            <div class="flex-grow bg-dark rounded-xl shadow-inner overflow-hidden border border-gray-700 relative">
-                <textarea id="markdownOutput" class="w-full h-full p-6 markdown-output focus:outline-none resize-none" spellcheck="false"></textarea>
-                
-                <!-- Notificação Flutuante de Cópia -->
-                <div id="copyNotification" class="absolute top-4 right-4 bg-gray-800 text-white text-sm px-3 py-1.5 rounded-md opacity-0 transition-opacity duration-300 pointer-events-none">
-                    Copiado para a área de transferência!
-                </div>
-            </div>
-        </section>
+  <section class="card hidden" id="result">
+    <div class="row">
+      <div><strong id="rName"></strong><div class="stats" id="rStats" style="margin-top:6px"></div></div>
+      <div class="row" style="gap:6px">
+        <button id="btnCopy">Copiar</button>
+        <button id="btnMd" class="primary">Baixar .md</button>
+        <button id="btnZip">Baixar .zip (com imagens)</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button id="tabMd" class="on">Markdown</button>
+      <button id="tabPv">Pré-visualização</button>
+    </div>
+    <textarea id="out" spellcheck="false"></textarea>
+    <div id="preview" class="hidden"></div>
+  </section>
+</main>
+<footer>
+  Dica: PDFs com texto selecionável são convertidos em segundos; o OCR (só para páginas escaneadas) é a etapa mais lenta.
+  Tabelas e gráficos são detectados por heurística: revise o resultado em documentos complexos.
+</footer>
+<div id="toast"></div>
 
-    </main>
+<script>
+'use strict';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const OPS = pdfjsLib.OPS, Util = pdfjsLib.Util;
+const $ = id => document.getElementById(id);
 
-    <!-- Rodapé -->
-    <footer class="bg-white border-t border-gray-200 py-6 mt-auto">
-        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
-            <p>Este aplicativo extrai texto de PDFs usando <a href="https://mozilla.github.io/pdf.js/" class="text-primary hover:underline" target="_blank">PDF.js</a> da Mozilla.</p>
-            <p class="mt-1 text-xs">Nota: A extração converte texto. Tabelas complexas e imagens não são convertidas automaticamente para Markdown.</p>
-        </div>
-    </footer>
+/* ================= Utilitários ================= */
+const toast = (m) => { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2200); };
+const pad3 = n => String(n).padStart(3, '0');
+const fmtTime = s => s < 60 ? s.toFixed(1) + 's' : Math.floor(s / 60) + 'min ' + Math.round(s % 60) + 's';
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Referências de elementos DOM
-            const dropZone = document.getElementById('uploadSection');
-            const fileInput = document.getElementById('fileInput');
-            const dropZoneContent = document.getElementById('dropZoneContent');
-            const loadingState = document.getElementById('loadingState');
-            const resultSection = document.getElementById('resultSection');
-            const markdownOutput = document.getElementById('markdownOutput');
-            const fileNameDisplay = document.getElementById('fileNameDisplay');
-            const fileStatsDisplay = document.getElementById('fileStatsDisplay');
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            
-            // Botões de ação
-            const btnNewFile = document.getElementById('btnNewFile');
-            const btnCopy = document.getElementById('btnCopy');
-            const btnDownload = document.getElementById('btnDownload');
-            const copyNotification = document.getElementById('copyNotification');
-            const useOcrCheckbox = document.getElementById('useOcr');
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error('Falha ao carregar ' + src));
+    document.head.appendChild(s);
+  });
+}
 
-            // Variável para guardar o texto markdown gerado
-            let currentMarkdownText = '';
-            let currentFileName = 'documento.md';
+/* ZIP mínimo (sem compressão: PNG/JPEG já são comprimidos) */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+async function makeZip(files) { // files: [{name, data:Uint8Array}]
+  const enc = new TextEncoder(), parts = [], central = []; let offset = 0;
+  const d = new Date(), dosT = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dosD = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const f of files) {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, dosT, true); h.setUint16(12, dosD, true); h.setUint32(14, crc, true); h.setUint32(18, sz, true); h.setUint32(22, sz, true);
+    h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    parts.push(h.buffer, nm, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, dosT, true); c.setUint16(14, dosD, true); c.setUint32(16, crc, true); c.setUint32(20, sz, true); c.setUint32(24, sz, true);
+    c.setUint16(28, nm.length, true); c.setUint32(42, offset, true);
+    central.push(c.buffer, nm);
+    offset += 30 + nm.length + sz;
+  }
+  const cSize = central.reduce((a, b) => a + (b.byteLength ?? b.length), 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cSize, true); e.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, e.buffer], { type: 'application/zip' });
+}
 
-            // --- EVENTOS DE DRAG AND DROP ---
-            
-            // Prevenir comportamentos padrão
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, preventDefaults, false);
-            });
+/* ================= Markdown inline ================= */
+function esc(s) {
+  return s.replace(/\*/g, '\\*').replace(/`/g, '\\`').replace(/</g, '\\<')
+    .replace(/(^|\s)_/g, '$1\\_').replace(/_(?=\s|$)/g, '\\_')
+    .replace(/\.{5,}/g, ' … ');
+}
+// segs: [{t, b, i}] -> markdown com **negrito** e *itálico*
+function segsToMd(segs, inTable) {
+  const m = [];
+  for (const s of segs) { const l = m[m.length - 1]; if (l && l.b === s.b && l.i === s.i) l.t += s.t; else m.push({ ...s }); }
+  let out = '';
+  for (const s of m) {
+    let t = esc(s.t); if (inTable) t = t.replace(/\|/g, '\\|');
+    const lead = t.match(/^\s*/)[0], trail = t.match(/\s*$/)[0], core = t.trim();
+    if (!core) { out += t; continue; }
+    let w = core; if (s.i) w = '*' + w + '*'; if (s.b) w = '**' + w + '**';
+    out += lead + w + trail;
+  }
+  return out.replace(/\s+/g, ' ').trim();
+}
+const segsPlain = segs => esc(segs.map(s => s.t).join('')).replace(/\s+/g, ' ').trim();
+const mergeEmph = s => s.replace(/\*\*(\s+)\*\*/g, '$1').replace(/(?<![*\\])\*(\s+)\*(?!\*)/g, '$1');
+function joinText(a, b) {
+  if (/[A-Za-zÀ-ÿ]-$/.test(a) && /^[a-zà-ÿ]/.test(b)) return a.slice(0, -1) + b;
+  return a + ' ' + b;
+}
 
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
+/* ================= Análise de uma página ================= */
+function fontInfo(page, name, cache) {
+  if (cache.has(name)) return cache.get(name);
+  let r = { b: false, i: false };
+  try {
+    if (page.commonObjs.has(name)) {
+      const f = page.commonObjs.get(name), nm = String(f.name || '');
+      r = { b: !!f.bold || /bold|black|heavy|semibold|demi/i.test(nm), i: !!f.italic || /italic|oblique/i.test(nm) };
+    }
+  } catch (e) { }
+  cache.set(name, r); return r;
+}
 
-            // Destacar área de drop
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropZone.addEventListener(eventName, highlight, false);
-            });
+// Percorre a lista de operadores para achar imagens e desenhos vetoriais (gráficos)
+function analyzeOps(opList, vpT, W, H) {
+  const { fnArray: fn, argsArray: ar } = opList;
+  let ctm = [1, 0, 0, 1, 0, 0]; const stack = [];
+  const imgs = [], shapes = []; let pend = null;
+  const FILL = new Set([OPS.fill, OPS.eoFill, OPS.fillStroke, OPS.eoFillStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
+  const PAINT = new Set([...FILL, OPS.stroke, OPS.closeStroke]);
+  const IMG = new Set([OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageMaskXObject, OPS.paintJpegXObject].filter(x => x !== undefined));
+  const pageArea = W * H;
+  for (let k = 0; k < fn.length; k++) {
+    const op = fn[k];
+    if (op === OPS.save) stack.push(ctm);
+    else if (op === OPS.restore) { if (stack.length) ctm = stack.pop(); }
+    else if (op === OPS.transform) ctm = Util.transform(ctm, ar[k]);
+    else if (op === OPS.paintFormXObjectBegin) { stack.push(ctm); if (ar[k][0]) ctm = Util.transform(ctm, ar[k][0]); }
+    else if (op === OPS.paintFormXObjectEnd) { if (stack.length) ctm = stack.pop(); }
+    else if (IMG.has(op)) {
+      const M = Util.transform(vpT, ctm);
+      const xs = [M[4], M[0] + M[4], M[2] + M[4], M[0] + M[2] + M[4]], ys = [M[5], M[1] + M[5], M[3] + M[5], M[1] + M[3] + M[5]];
+      imgs.push({ x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) });
+    }
+    else if (op === OPS.constructPath) {
+      const M = Util.transform(vpT, ctm), ops = ar[k][0], c = ar[k][1];
+      if (!pend) pend = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9, curves: 0, diag: 0, axis: 0, rects: [] };
+      let ci = 0, cur = null;
+      const pt = (x, y) => { const X = M[0] * x + M[2] * y + M[4], Y = M[1] * x + M[3] * y + M[5]; if (X < pend.x0) pend.x0 = X; if (X > pend.x1) pend.x1 = X; if (Y < pend.y0) pend.y0 = Y; if (Y > pend.y1) pend.y1 = Y; return [X, Y]; };
+      for (const o of ops) {
+        if (o === OPS.moveTo) { cur = pt(c[ci], c[ci + 1]); ci += 2; }
+        else if (o === OPS.lineTo) {
+          const p = pt(c[ci], c[ci + 1]); ci += 2;
+          if (cur) { const dx = Math.abs(p[0] - cur[0]), dy = Math.abs(p[1] - cur[1]); if (dx > 2 && dy > 2) pend.diag++; else pend.axis++; }
+          cur = p;
+        }
+        else if (o === OPS.curveTo) { pt(c[ci], c[ci + 1]); pt(c[ci + 2], c[ci + 3]); cur = pt(c[ci + 4], c[ci + 5]); ci += 6; pend.curves++; }
+        else if (o === OPS.curveTo2 || o === OPS.curveTo3) { pt(c[ci], c[ci + 1]); cur = pt(c[ci + 2], c[ci + 3]); ci += 4; pend.curves++; }
+        else if (o === OPS.rectangle) {
+          const a = pt(c[ci], c[ci + 1]), b = pt(c[ci] + c[ci + 2], c[ci + 1] + c[ci + 3]); ci += 4;
+          pend.rects.push({ w: Math.abs(b[0] - a[0]), h: Math.abs(b[1] - a[1]) });
+        }
+      }
+    }
+    else if (PAINT.has(op)) {
+      if (pend) {
+        const w = pend.x1 - pend.x0, h = pend.y1 - pend.y0;
+        if (w * h < 0.6 * pageArea && (w > 1 || h > 1)) { pend.filled = FILL.has(op); shapes.push(pend); }
+        pend = null;
+      }
+    }
+    else if (op === OPS.endPath) pend = null;
+  }
+  return { imgs, shapes };
+}
 
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropZone.addEventListener(eventName, unhighlight, false);
-            });
+function unionRects(list, pad) {
+  const rs = list.map(r => ({ ...r })); let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+      const a = rs[i], b = rs[j];
+      if (a.x0 - pad <= b.x1 && b.x0 - pad <= a.x1 && a.y0 - pad <= b.y1 && b.y0 - pad <= a.y1) {
+        a.x0 = Math.min(a.x0, b.x0); a.y0 = Math.min(a.y0, b.y0); a.x1 = Math.max(a.x1, b.x1); a.y1 = Math.max(a.y1, b.y1);
+        a.kind = (a.kind === 'chart' || b.kind === 'chart') ? 'chart' : 'img';
+        rs.splice(j, 1); j--; changed = true;
+      }
+    }
+  }
+  return rs;
+}
 
-            function highlight(e) {
-                dropZone.classList.add('dragover');
-            }
+// Agrupa desenhos vetoriais próximos e decide quais parecem gráficos (e não linhas de tabela)
+function chartClusters(shapes) {
+  const n = shapes.length; if (!n) return [];
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = x => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+  const grid = new Map(), G = 24, P = 6;
+  for (let i = 0; i < n; i++) {
+    const s = shapes[i];
+    const cx0 = Math.floor((s.x0 - P) / G), cx1 = Math.floor((s.x1 + P) / G), cy0 = Math.floor((s.y0 - P) / G), cy1 = Math.floor((s.y1 + P) / G);
+    if ((cx1 - cx0 + 1) * (cy1 - cy0 + 1) > 900) continue;
+    for (let cx = cx0; cx <= cx1; cx++) for (let cy = cy0; cy <= cy1; cy++) {
+      const key = cx * 100003 + cy, f = grid.get(key);
+      if (f === undefined) grid.set(key, i); else { const a = find(f), b = find(i); if (a !== b) parent[a] = b; }
+    }
+  }
+  const cl = new Map();
+  for (let i = 0; i < n; i++) {
+    const r = find(i), s = shapes[i];
+    let c = cl.get(r);
+    if (!c) cl.set(r, c = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9, curves: 0, diag: 0, axis: 0, bars: [], n: 0 });
+    c.x0 = Math.min(c.x0, s.x0); c.y0 = Math.min(c.y0, s.y0); c.x1 = Math.max(c.x1, s.x1); c.y1 = Math.max(c.y1, s.y1);
+    c.curves += s.curves; c.diag += s.diag; c.axis += s.axis; c.n++;
+    if (s.filled) for (const r of s.rects) if (r.w >= 4 && r.h >= 4) c.bars.push(r);
+  }
+  const out = [];
+  for (const c of cl.values()) {
+    const w = c.x1 - c.x0, h = c.y1 - c.y0;
+    if (w < 50 || h < 40) continue;
+    const distinct = new Set(c.bars.map(b => Math.round(b.h / 3) + '/' + Math.round(b.w / 3))).size;
+    const big = w >= 80 && h >= 60;
+    const looksChart = c.curves >= 10 || c.diag >= 10 || (big && (c.diag >= 3 || c.curves >= 4)) || (c.bars.length >= 3 && distinct >= 2 && c.axis < c.bars.length * 6);
+    if (looksChart) out.push({ x0: c.x0, y0: c.y0, x1: c.x1, y1: c.y1, kind: 'chart' });
+  }
+  return out;
+}
 
-            function unhighlight(e) {
-                dropZone.classList.remove('dragover');
-            }
+// Agrupa itens de texto em linhas (mesma linha de base)
+function groupLines(items) {
+  const s = items.slice().sort((a, b) => a.y - b.y || a.x0 - b.x0);
+  const groups = [];
+  for (const it of s) {
+    const g = groups[groups.length - 1];
+    if (g && Math.abs(it.y - g.y) <= 0.45 * Math.max(it.fs, g.fs)) { g.items.push(it); if (it.fs > g.fs) { g.fs = it.fs; } }
+    else groups.push({ y: it.y, fs: it.fs, items: [it] });
+  }
+  return groups.map(g => g.items);
+}
 
-            // Lidar com o arquivo solto
-            dropZone.addEventListener('drop', handleDrop, false);
+function makeLine(items) {
+  items.sort((a, b) => a.x0 - b.x0);
+  // fonte e linha de base dominantes
+  let best = items[0], bestLen = -1;
+  for (const it of items) { const l = it.str.trim().length; if (l > bestLen) { bestLen = l; best = it; } }
+  const fs = best.fs, gapMin = Math.max(0.8 * fs, 5);
+  const cells = []; let cell = null, prevEnd = null, nonSpace = 0, boldChars = 0;
+  for (const it of items) {
+    const txt = it.str;
+    if (!txt.trim()) { if (cell && !/\s$/.test(cell.segs[cell.segs.length - 1]?.t || ' ')) cell.segs.push({ t: ' ', b: false, i: false }); continue; }
+    const gap = prevEnd === null ? 0 : it.x0 - prevEnd;
+    if (!cell || gap > gapMin) { cell = { x0: it.x0, x1: it.x1, segs: [] }; cells.push(cell); }
+    else if (gap > 0.12 * fs && !/\s$/.test(cell.segs[cell.segs.length - 1]?.t || ' ') && !/^\s/.test(txt)) cell.segs.push({ t: ' ', b: false, i: false });
+    cell.segs.push({ t: txt, b: it.b, i: it.i });
+    cell.x1 = Math.max(cell.x1, it.x1); prevEnd = Math.max(prevEnd ?? -1e9, it.x1);
+    const l = txt.replace(/\s/g, '').length; nonSpace += l; if (it.b) boldChars += l;
+  }
+  const segs = cells.flatMap((c, k) => k ? [{ t: ' ', b: false, i: false }, ...c.segs] : c.segs);
+  const plain = segs.map(s => s.t).join('').replace(/\s+/g, ' ').trim();
+  return {
+    y: best.y, fs, x0: cells[0].x0, x1: Math.max(...cells.map(c => c.x1)), cells, segs, plain,
+    chars: nonSpace, bold: nonSpace > 0 && boldChars / nonSpace > 0.9
+  };
+}
 
-            function handleDrop(e) {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleFiles(files);
-            }
+const LI_RE = /^(?:([•●▪■◦○·–—►➢✓✔*-])|(\d{1,3}[.)])|(\(?[a-z]\)))\s+(?=\S)/;
+function listMarker(line) {
+  const m = LI_RE.exec(line.plain); if (!m) return null;
+  if ((m[1] === '-' || m[1] === '*' || m[1] === '–' || m[1] === '—') && line.plain.length < 3) return null;
+  return { marker: m[0].trim(), ordered: !m[1], num: m[2] ? parseInt(m[2], 10) : null };
+}
 
-            // Lidar com clique para selecionar arquivo
-            dropZone.addEventListener('click', (e) => {
-                // Prevenir a abertura do seletor de arquivos se clicar na área do botão OCR
-                if (e.target.closest('#ocrToggleContainer')) return;
+// Tira o marcador do início dos segmentos
+function stripMarker(segs, marker) {
+  const out = []; let rest = marker.length, started = false;
+  for (const s of segs) {
+    if (rest <= 0) { out.push(s); continue; }
+    let t = s.t; if (!started) { t = t.replace(/^\s+/, ''); if (t !== s.t) { /* espaços iniciais descartados */ } }
+    if (!t.length) continue; started = true;
+    if (t.length <= rest) { rest -= t.length; continue; }
+    out.push({ ...s, t: t.slice(rest).replace(/^\s+/, '') }); rest = 0;
+  }
+  return out;
+}
 
-                // Não abrir seletor se estiver carregando
-                if(loadingState.classList.contains('hidden')) {
-                    fileInput.click();
-                }
-            });
+// Tenta montar uma tabela a partir de linhas consecutivas com várias células
+function tryTable(lines, i) {
+  if (lines[i].cells.length < 2) return null;
+  let j = i;
+  while (j < lines.length && lines[j].cells.length >= 2 && (j === i || lines[j].y - lines[j - 1].y < 3.2 * lines[j].fs)) j++;
+  const rows = lines.slice(i, j); if (rows.length < 3) return null;
+  const iv = rows.flatMap(r => r.cells.map(c => [c.x0, c.x1])).sort((a, b) => a[0] - b[0]);
+  const bands = []; for (const [a, b] of iv) { const l = bands[bands.length - 1]; if (l && a <= l[1]) l[1] = Math.max(l[1], b); else bands.push([a, b]); }
+  if (bands.length < 2 || bands.length > 12) return null;
+  const per = Array(bands.length).fill(0), idx = x => { for (let k = 0; k < bands.length; k++) if (x <= bands[k][1] + 0.5) return k; return bands.length - 1; };
+  for (const r of rows) for (const k of new Set(r.cells.map(c => idx(c.x0)))) per[k]++;
+  if (per.some(c => c < 0.6 * rows.length)) return null;
+  const colOf = x => { for (let k = 0; k < bands.length; k++) if (x <= bands[k][1] + 0.5) return k; return bands.length - 1; };
+  const grid = rows.map(r => { const row = Array(bands.length).fill(null); for (const c of r.cells) { const k = colOf(c.x0); row[k] = row[k] ? [...row[k], { t: ' ', b: false, i: false }, ...c.segs] : c.segs; } return row; });
+  return { end: j, rows: grid, x0: Math.min(...rows.map(r => r.x0)), x1: Math.max(...rows.map(r => r.x1)), y0: rows[0].y - rows[0].fs, y1: rows[rows.length - 1].y, fs: rows[0].fs };
+}
 
-            fileInput.addEventListener('change', function() {
-                handleFiles(this.files);
-            });
+// Linhas -> blocos (parágrafos, itens de lista, tabelas)
+function buildBlocks(lines, side) {
+  const blocks = []; let cur = null;
+  const colX1 = Math.max(...lines.map(l => l.x1), 0), colX0 = Math.min(...lines.map(l => l.x0), 1e9), colW = colX1 - colX0;
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+    const tb = tryTable(lines, i);
+    if (tb) { blocks.push({ type: 'table', side, rows: tb.rows, x0: tb.x0, x1: tb.x1, y0: tb.y0, y1: tb.y1, fs: tb.fs }); cur = null; i = tb.end - 1; continue; }
+    const lm = listMarker(ln);
+    if (lm) {
+      cur = { type: 'li', side, lines: [ln], lm, x0: ln.x0, x1: ln.x1, y0: ln.y - ln.fs, y1: ln.y, fs: ln.fs }; blocks.push(cur); continue;
+    }
+    if (cur && cur.type !== 'table' && !cur.fixed) {
+      const last = cur.lines[cur.lines.length - 1], dy = ln.y - last.y;
+      const sameFs = Math.abs(ln.fs - last.fs) <= 0.12 * last.fs;
+      const closeEnough = dy > 0.4 * last.fs && dy < 1.65 * last.fs;
+      const shortEnd = last.x1 < colX1 - 0.25 * colW && /[.!?:]$/.test(last.plain);
+      const okLi = cur.type !== 'li' || ln.x0 >= cur.x0 - 1;
+      const boldBreak = last.bold && !ln.bold && cur.type === 'p';
+      if (sameFs && closeEnough && !shortEnd && okLi && !boldBreak) { cur.lines.push(ln); cur.x1 = Math.max(cur.x1, ln.x1); cur.y1 = ln.y; continue; }
+    }
+    cur = { type: 'p', side, lines: [ln], x0: ln.x0, x1: ln.x1, y0: ln.y - ln.fs, y1: ln.y, fs: ln.fs }; blocks.push(cur);
+  }
+  return blocks;
+}
 
-            // --- PROCESSAMENTO DO ARQUIVO ---
-            
-            function handleFiles(files) {
-                if (files.length === 0) return;
-                
-                const file = files[0];
-                
-                // Validar se é PDF
-                if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-                    alert('Por favor, selecione um arquivo PDF válido.');
-                    return;
-                }
+function detectGutter(items, W) {
+  const n = items.length; if (n < 40) return null;
+  let run = null, best = null;
+  for (let x = Math.floor(0.3 * W); x <= 0.7 * W; x += 2) {
+    let cross = 0, left = 0, right = 0;
+    for (const it of items) { if (it.x0 < x && it.x1 > x) cross++; else if (it.x1 <= x) left++; else right++; }
+    const ok = cross <= 0.04 * n && left >= 0.2 * n && right >= 0.2 * n;
+    if (ok) { if (!run) run = { a: x, b: x }; else run.b = x; } else { if (run && (!best || run.b - run.a > best.b - best.a)) best = run; run = null; }
+  }
+  if (run && (!best || run.b - run.a > best.b - best.a)) best = run;
+  if (!best || best.b - best.a < 8) return null;
+  const g = (best.a + best.b) / 2;
+  // texto em colunas tem linhas largas de cada lado; tabelas não
+  const sideW = side => { const ls = groupLines(items.filter(i => side ? i.x0 >= g : i.x1 <= g)).map(makeLine); if (ls.length < 8) return 0; const w = ls.map(l => l.x1 - l.x0).sort((a, b) => a - b); return w[w.length >> 1]; };
+  return (sideW(0) >= 0.28 * W && sideW(1) >= 0.28 * W) ? g : null;
+}
 
-                // Atualizar UI para estado de carregamento
-                dropZoneContent.classList.add('hidden');
-                loadingState.classList.remove('hidden');
-                loadingState.classList.add('flex');
-                dropZone.classList.remove('cursor-pointer', 'hover:bg-gray-50');
-                
-                currentFileName = file.name.replace(/\.[^/.]+$/, "") + ".md";
-                fileNameDisplay.textContent = file.name;
+async function analyzePage(page, pageNum, ctx) {
+  const vp = page.getViewport({ scale: 1 }), vpT = vp.transform, W = vp.width, H = vp.height;
+  const wantFigs = ctx.opts.figs;
+  const [tc, opList] = await Promise.all([page.getTextContent(), page.getOperatorList()]);
+  const fcache = new Map(), raw = [];
+  for (const it of tc.items) {
+    if (typeof it.str !== 'string') continue;
+    const t = Util.transform(vpT, it.transform), fs = Math.hypot(t[2], t[3]) || it.height || 10;
+    const f = fontInfo(page, it.fontName, fcache);
+    raw.push({ str: it.str, x0: t[4], x1: t[4] + it.width, y: t[5], fs, b: f.b, i: f.i });
+  }
+  const textChars = raw.reduce((a, it) => a + it.str.replace(/\s/g, '').length, 0);
 
-                // Iniciar leitura e conversão
-                processarPDF(file);
-            }
+  // figuras: imagens + gráficos vetoriais
+  let figs = [], items = raw, imgCover = 0;
+  if (opList) {
+    const { imgs, shapes } = analyzeOps(opList, vpT, W, H);
+    for (const r of imgs) imgCover = Math.max(imgCover, (r.x1 - r.x0) * (r.y1 - r.y0) / (W * H));
+    if (wantFigs) {
+      const charts = chartClusters(shapes), cand = [];
+      for (const c of charts) { // incorpora rótulos curtos dos eixos
+        const P = 24; let x0 = c.x0, y0 = c.y0, x1 = c.x1, y1 = c.y1;
+        for (const it of raw) {
+          const cx = (it.x0 + it.x1) / 2, cy = it.y - it.fs * 0.3, inside = cx >= c.x0 && cx <= c.x1 && cy >= c.y0 && cy <= c.y1;
+          const near = cx >= c.x0 - P && cx <= c.x1 + P && cy >= c.y0 - P && cy <= c.y1 + P && it.str.trim().length <= 14;
+          if (inside || near) { x0 = Math.min(x0, it.x0); x1 = Math.max(x1, it.x1); y0 = Math.min(y0, it.y - it.fs); y1 = Math.max(y1, it.y + it.fs * 0.25); }
+        }
+        cand.push({ x0, y0, x1, y1, kind: 'chart' });
+      }
+      for (const r of imgs) if (r.x1 - r.x0 >= 30 && r.y1 - r.y0 >= 30) cand.push({ ...r, kind: 'img' });
+      figs = unionRects(cand, 6).filter(r => r.x1 - r.x0 >= 40 && r.y1 - r.y0 >= 30);
+      figs = figs.filter(r => !((r.x1 - r.x0) * (r.y1 - r.y0) > 0.8 * W * H && textChars >= 25));
+      figs.sort((a, b) => (b.x1 - b.x0) * (b.y1 - b.y0) - (a.x1 - a.x0) * (a.y1 - a.y0)); figs = figs.slice(0, 12);
+      for (const f of figs) f.x0 = Math.max(0, f.x0 - 4), f.y0 = Math.max(0, f.y0 - 4), f.x1 = Math.min(W, f.x1 + 4), f.y1 = Math.min(H, f.y1 + 4);
+      // texto dentro de gráficos vetoriais vira "alt", não corpo
+      items = [];
+      for (const it of raw) {
+        const cx = (it.x0 + it.x1) / 2, cy = it.y - it.fs * 0.3;
+        const f = figs.find(f => f.kind === 'chart' && cx >= f.x0 && cx <= f.x1 && cy >= f.y0 && cy <= f.y1);
+        if (f) (f.alt ||= []).push(it); else items.push(it);
+      }
+    }
+  }
 
-            async function processarPDF(file) {
-                try {
-                    const arrayBuffer = await file.arrayBuffer();
-                    
-                    // Carregar documento usando PDF.js
-                    const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
-                    const pdfDocument = await loadingTask.promise;
-                    
-                    const numPages = pdfDocument.numPages;
-                    fileStatsDisplay.textContent = `(${numPages} página${numPages > 1 ? 's' : ''})`;
-                    
-                    let markdownContent = `# Documento: ${file.name}\n\n`;
-                    let extractedText = '';
-                    
-                    const isOcrEnabled = useOcrCheckbox.checked;
+  // página escaneada? (sem texto e com imagem grande)
+  const scanned = textChars < 25 && imgCover > 0.4;
+  const doOcr = ctx.opts.ocr === 'force' || (ctx.opts.ocr === 'auto' && scanned);
+  const res = { n: pageNum, W, H, blocks: [], figs: 0, ocr: false };
 
-                    // OTIMIZAÇÃO 1: Criar o worker do Tesseract UMA VEZ fora do loop
-                    let ocrWorker = null;
-                    if (isOcrEnabled) {
-                        progressText.textContent = 'Inicializando motor OCR (isso ocorre apenas uma vez)...';
-                        ocrWorker = await Tesseract.createWorker('por+eng', 1, {
-                            logger: m => {
-                                if(m.status === 'recognizing text') {
-                                    const ocrProgress = Math.round(m.progress * 100);
-                                    progressText.textContent = `OCR em andamento: ${ocrProgress}% concluído...`;
-                                }
-                            }
-                        });
-                    }
+  if (doOcr) {
+    const scale = 2.5, cv = document.createElement('canvas'), v2 = page.getViewport({ scale });
+    cv.width = Math.ceil(v2.width); cv.height = Math.ceil(v2.height);
+    await page.render({ canvasContext: cv.getContext('2d'), viewport: v2, background: '#ffffff' }).promise;
+    const text = await ctx.ocr(cv);
+    cv.width = cv.height = 0;
+    const paras = text.split(/\n\s*\n/).map(p => p.split('\n').map(s => s.trim()).filter(Boolean).reduce((a, s) => a ? joinText(a, s) : s, '')).filter(Boolean);
+    paras.forEach((p, k) => res.blocks.push({ type: 'raw', md: esc(p), side: 'S', y0: k, x0: 0, y1: k, x1: 0 }));
+    res.ocr = true; page.cleanup(); return res;
+  }
 
-                    // Extrair texto página por página
-                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                        // Atualizar barra de progresso
-                        const progress = (pageNum / numPages) * 100;
-                        progressBar.style.width = `${progress}%`;
-                        
-                        if (isOcrEnabled) {
-                            progressText.textContent = `Lendo página ${pageNum} de ${numPages} com OCR (isso pode demorar)...`;
-                        } else {
-                            progressText.textContent = `${pageNum} / ${numPages} páginas processadas`;
-                        }
+  // layout: colunas?
+  const gut = detectGutter(items, W);
+  const L = [], R = [], S = [];
+  for (const g of groupLines(items)) {
+    if (gut === null) { S.push(makeLine(g)); continue; }
+    if (g.some(it => it.x0 < gut && it.x1 > gut)) { S.push(makeLine(g)); continue; }
+    const l = g.filter(it => it.x1 <= gut), r = g.filter(it => it.x0 >= gut);
+    if (l.length) L.push(makeLine(l)); if (r.length) R.push(makeLine(r));
+  }
+  const byY = (a, b) => a.y - b.y;
+  for (const [ls, side] of [[S, 'S'], [L, 'L'], [R, 'R']]) if (ls.length) res.blocks.push(...buildBlocks(ls.sort(byY), side));
 
-                        const page = await pdfDocument.getPage(pageNum);
-                        let pageText = '';
+  // figuras viram blocos
+  if (figs.length) {
+    const sc = Math.min(2, 4000 / Math.max(W, H)), v2 = page.getViewport({ scale: sc });
+    const cv = document.createElement('canvas'); cv.width = Math.ceil(v2.width); cv.height = Math.ceil(v2.height);
+    await page.render({ canvasContext: cv.getContext('2d'), viewport: v2, background: '#ffffff' }).promise;
+    figs.sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+    let k = 0;
+    for (const f of figs) {
+      k++;
+      const w = Math.max(1, Math.round((f.x1 - f.x0) * sc)), h = Math.max(1, Math.round((f.y1 - f.y0) * sc));
+      const c2 = document.createElement('canvas'); c2.width = w; c2.height = h;
+      c2.getContext('2d').drawImage(cv, Math.round(f.x0 * sc), Math.round(f.y0 * sc), w, h, 0, 0, w, h);
+      const jpg = f.kind === 'img', type = jpg ? 'image/jpeg' : 'image/png';
+      const blob = await new Promise(r => c2.toBlob(r, type, 0.88)); c2.width = c2.height = 0;
+      const name = `pagina-${pad3(pageNum)}-fig-${k}.${jpg ? 'jpg' : 'png'}`;
+      const alt = f.alt ? f.alt.map(i => i.str.trim()).filter(Boolean).join(' ').replace(/[\[\]\n]/g, ' ').replace(/\s+/g, ' ').slice(0, 300) : '';
+      const side = gut === null ? 'S' : f.x1 <= gut + 4 ? 'L' : f.x0 >= gut - 4 ? 'R' : 'S';
+      res.blocks.push({ type: 'fig', side, name, blob, alt, kind: f.kind, x0: f.x0, x1: f.x1, y0: f.y0, y1: f.y1 });
+      res.figs++;
+    }
+    cv.width = cv.height = 0;
+  }
+  page.cleanup();
+  return res;
+}
 
-                        if (isOcrEnabled) {
-                            // MODO OCR: Renderizar a página em um canvas com boa resolução
-                            // OTIMIZAÇÃO 2: Reduzido de 2.0 para 1.5 para maior velocidade de leitura
-                            const scale = 1.5; 
-                            const viewport = page.getViewport({ scale: scale });
-                            
-                            const canvas = document.createElement('canvas');
-                            const context = canvas.getContext('2d');
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
+/* ================= Montagem do Markdown (fase 2) ================= */
+function orderBlocks(blocks) {
+  const S = blocks.filter(b => b.side === 'S').sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
+  if (S.length === blocks.length) return S;
+  const key = b => {
+    if (b.side === 'S') return [2 * S.indexOf(b), 0, b.y0];
+    const k = S.filter(s => (s.y0 + s.y1) / 2 < (b.y0 + b.y1) / 2).length;
+    return [2 * k - 1, b.side === 'L' ? 0 : 1, b.y0];
+  };
+  return blocks.map(b => ({ b, k: key(b) })).sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2] - b.k[2]).map(x => x.b);
+}
 
-                            const renderContext = {
-                                canvasContext: context,
-                                viewport: viewport
-                            };
-                            
-                            // Aguarda a renderização do PDF no Canvas
-                            await page.render(renderContext).promise;
-                            
-                            // Executar OCR da imagem usando o worker reaproveitado
-                            progressText.textContent = `Lendo página ${pageNum} de ${numPages} com OCR...`;
-                            const { data: { text } } = await ocrWorker.recognize(canvas);
-                            pageText = text;
+function assemble(pages, name, opts) {
+  const nPages = pages.length;
+  // cabeçalhos/rodapés repetidos
+  const counts = new Map(), keyOf = b => b.lines[0].plain.toLowerCase().replace(/\d+/g, '#').trim();
+  const edge = (b, p) => b.type === 'p' && b.lines.length === 1 && (b.y1 < 0.08 * p.H || b.y0 > 0.92 * p.H);
+  if (nPages >= 3) {
+    for (const p of pages) { const seen = new Set(); for (const b of p.blocks) if (edge(b, p)) { const k = keyOf(b); if (!seen.has(k)) { seen.add(k); counts.set(k, (counts.get(k) || 0) + 1); } } }
+    const thr = Math.max(3, Math.ceil(0.35 * nPages));
+    for (const p of pages) p.blocks = p.blocks.filter(b => !(edge(b, p) && counts.get(keyOf(b)) >= thr));
+  }
+  // tamanho do corpo = fonte mais comum (por caractere)
+  const w = new Map();
+  for (const p of pages) for (const b of p.blocks) if (b.lines) for (const l of b.lines) { const k = Math.round(l.fs * 2) / 2; w.set(k, (w.get(k) || 0) + l.chars); }
+  let body = 11, mx = -1; for (const [k, v] of w) if (v > mx) { mx = v; body = k; }
+  // candidatos a título
+  const isHead = b => b.lines && b.lines.length <= 3 && b.lines.reduce((a, l) => a + l.chars, 0) <= 180 && b.fs >= body * 1.12 && !/[,;]$/.test(b.lines[b.lines.length - 1].plain);
+  const sizes = [...new Set(pages.flatMap(p => p.blocks.filter(isHead).map(b => Math.round(b.fs * 2) / 2)))].sort((a, b) => b - a);
+  const tiers = []; for (const s of sizes) { if (!tiers.length || tiers[tiers.length - 1] / s > 1.08) tiers.push(s); }
+  const levelOf = fs => { const r = Math.round(fs * 2) / 2; let k = tiers.findIndex(t => t / r <= 1.08 && r / t <= 1.08); if (k < 0) k = tiers.length - 1; return Math.min(k + 1, 4); };
+  const boldLvl = Math.min((tiers.length ? Math.min(tiers.length, 4) : 0) + 1, 6);
 
-                        } else {
-                            // MODO NORMAL: Extrai apenas a camada de texto selecionável do PDF
-                            const textContent = await page.getTextContent();
-                            
-                            // Heurística básica para formatar o texto
-                            // Em PDF.js, os itens de texto vêm em pedaços com coordenadas.
-                            // Esta é uma conversão simples. Uma conversão perfeita exigiria análise de layout complexa.
-                            
-                            let lastY = -1;
-                            
-                            // Classificar itens por posição Y (top-down) e depois X (left-right)
-                            const items = textContent.items;
-                            items.sort((a, b) => {
-                                // Tolerância para linhas na mesma altura
-                                if (Math.abs(b.transform[5] - a.transform[5]) > 5) {
-                                    return b.transform[5] - a.transform[5]; // Descendente Y
-                                }
-                                return a.transform[4] - b.transform[4]; // Ascendente X
-                            });
+  const out = []; // {kind:'p'|'h'|'li'|'tbl'|'fig'|'raw', md}
+  const images = []; let nTables = 0, nFigs = 0, nOcr = 0;
+  for (const p of pages) {
+    if (opts.marks) out.push({ kind: 'raw', md: `<!-- Página ${p.n} -->` });
+    if (p.ocr) nOcr++;
+    let liRun = null;
+    for (const b of orderBlocks(p.blocks)) {
+      if (b.type === 'raw') { out.push({ kind: 'p', md: b.md, ocr: true }); continue; }
+      if (b.type === 'fig') {
+        nFigs++; images.push({ name: b.name, blob: b.blob });
+        const alt = (b.alt ? `Figura – ${b.alt}` : `Figura ${nFigs}`);
+        out.push({ kind: 'fig', md: `![${alt}](images/${b.name})` }); liRun = null; continue;
+      }
+      if (b.type === 'table') {
+        nTables++;
+        const rows = b.rows.map(r => '| ' + r.map(c => c ? segsToMd(c, true) : '').join(' | ') + ' |');
+        rows.splice(1, 0, '| ' + b.rows[0].map(() => '---').join(' | ') + ' |');
+        out.push({ kind: 'tbl', md: rows.join('\n') }); liRun = null; continue;
+      }
+      const joinLines = fn => b.lines.map(fn).reduce((a, s) => a ? joinText(a, s) : s, '');
+      if (b.type === 'li') {
+        if (isHead(b) && b.lines.length <= 2) { // "1. Introdução" em fonte grande = título
+          out.push({ kind: 'h', md: '#'.repeat(levelOf(b.fs)) + ' ' + joinLines(l => segsPlain(l.segs)) }); liRun = null; continue;
+        }
+        if (!liRun) liRun = { base: b.x0 };
+        liRun.base = Math.min(liRun.base, b.x0);
+        const lvl = Math.min(Math.floor((b.x0 - liRun.base) / Math.max(1.4 * b.fs, 10)), 3);
+        const first = { ...b.lines[0], segs: stripMarker(b.lines[0].segs, b.lm.marker) };
+        const rest = b.lines.slice(1);
+        const txt = [first, ...rest].map(l => segsToMd(l.segs)).reduce((a, s) => a ? joinText(a, s) : s, '');
+        const bullet = b.lm.ordered ? (b.lm.num ?? 1) + '.' : '-';
+        out.push({ kind: 'li', md: '   '.repeat(lvl) + bullet + ' ' + mergeEmph(txt) }); continue;
+      }
+      liRun = null;
+      if (isHead(b)) { out.push({ kind: 'h', md: '#'.repeat(levelOf(b.fs)) + ' ' + joinLines(l => segsPlain(l.segs)) }); continue; }
+      if (b.lines.length === 1 && b.lines[0].bold && b.lines[0].chars <= 90 && b.fs >= body * 0.95 && !/[.,;]$/.test(b.lines[0].plain)) {
+        out.push({ kind: 'h', md: '#'.repeat(boldLvl) + ' ' + segsPlain(b.lines[0].segs) }); continue;
+      }
+      let md = mergeEmph(joinLines(l => segsToMd(l.segs)));
+      if (/^(#{1,6}\s|[>+\-]\s|\d+[.)]\s)/.test(md)) md = '\\' + md;
+      out.push({ kind: 'p', md });
+    }
+  }
+  // junta parágrafos cortados entre páginas/colunas
+  const merged = [];
+  for (const o of out) {
+    const l = merged[merged.length - 1];
+    if (l && l.kind === 'p' && o.kind === 'p' && !o.ocr && !/[.!?:;"”»)]$/.test(l.md) && /^[a-zà-ÿ0-9(]/.test(o.md)) l.md = joinText(l.md, o.md);
+    else merged.push({ ...o });
+  }
+  let md = '', prev = null;
+  for (const o of merged) {
+    md += (prev ? (prev.kind === 'li' && o.kind === 'li' ? '\n' : '\n\n') : '') + o.md; prev = o;
+  }
+  return { md: md + '\n', images, stats: { pages: nPages, tables: nTables, figs: nFigs, ocr: nOcr, body } };
+}
 
-                            for (const item of items) {
-                                // Ignorar itens vazios
-                                if (item.str.trim() === '') {
-                                    continue;
-                                }
+/* ================= OCR (lazy) ================= */
+async function createOcr(lang, n) {
+  if (!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+  const sch = Tesseract.createScheduler();
+  const ws = await Promise.all(Array.from({ length: n }, () => Tesseract.createWorker(lang, 1)));
+  ws.forEach(w => sch.addWorker(w));
+  return { recognize: async cv => (await sch.addJob('recognize', cv)).data.text, close: () => sch.terminate() };
+}
 
-                                // Detectar nova linha com base na diferença de Y
-                                const currentY = item.transform[5];
-                                if (lastY !== -1 && Math.abs(lastY - currentY) > 10) {
-                                    // Se a diferença de altura for grande, pode ser um novo parágrafo
-                                    if (Math.abs(lastY - currentY) > 20) {
-                                        pageText += '\n\n';
-                                    } else {
-                                        pageText += '\n';
-                                    }
-                                } else if (lastY !== -1) {
-                                    // Adicionar espaço entre palavras na mesma linha se necessário
-                                    pageText += ' ';
-                                }
-                                
-                                // Tentar detectar títulos grosseiramente pelo tamanho da fonte (transform[0])
-                                // e negrito (depende da fonte, mais difícil de detectar de forma consistente)
-                                const fontSize = item.transform[0];
-                                let textStr = item.str;
-                                
-                                // Heurística simples: se a fonte for grande, pode ser um título
-                                if (fontSize > 16) {
-                                    textStr = `## ${textStr}`;
-                                } else if (fontSize > 14) {
-                                    textStr = `### ${textStr}`;
-                                }
-                                
-                                pageText += textStr;
-                                lastY = currentY;
-                            }
-                        }
+/* ================= Orquestração ================= */
+const state = { cancel: false, current: null, result: null, urls: [] };
+const cores = navigator.hardwareConcurrency || 4;
+const defThreads = Math.max(1, Math.min(cores - 1, 5));
+for (let i = 1; i <= Math.max(cores, 2); i++) { const o = document.createElement('option'); o.value = i; o.textContent = i + (i === defThreads ? ' (recomendado)' : ''); if (i === defThreads) o.selected = true; $('optThreads').appendChild(o); }
+$('hw').textContent = `Seu navegador reporta ${cores} núcleos${navigator.deviceMemory ? ' e ~' + navigator.deviceMemory + ' GB de RAM' : ''}. Cada núcleo extra processa uma página por vez com seu próprio leitor de PDF.`;
 
-                        // Adicionar texto da página com separador
-                        markdownContent += `<!-- Página ${pageNum} -->\n\n${pageText}\n\n`;
-                    }
+async function convert(file) {
+  state.cancel = false; $('result').classList.add('hidden'); $('progress').classList.remove('hidden');
+  const opts = { ocr: $('optOcr').value, figs: $('optFigs').checked, marks: $('optMarks').checked, lang: $('optLang').value };
+  const t0 = performance.now();
+  const pText = $('pText'), pBar = $('pBar'); $('pTitle').textContent = 'Convertendo ' + file.name;
+  let docs = [], workers = [], ocr = null, ocrPromise = null;
+  try {
+    const buf = await file.arrayBuffer();
+    let threads = Math.max(1, +$('optThreads').value);
+    threads = Math.max(1, Math.min(threads, Math.floor(1500e6 / Math.max(buf.byteLength, 1))));
+    // primeira abertura para saber o total de páginas
+    const open = async i => {
+      const w = new pdfjsLib.PDFWorker({ name: 'pdf-' + i }); workers.push(w);
+      const doc = await pdfjsLib.getDocument({
+        data: i === 0 ? new Uint8Array(buf.slice(0)) : new Uint8Array(buf.slice(0)), worker: w,
+        isEvalSupported: false,
+        standardFontDataUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/',
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/', cMapPacked: true
+      }).promise;
+      docs.push(doc); return doc;
+    };
+    const first = await open(0), total = first.numPages;
+    threads = Math.min(threads, total);
+    const results = new Array(total); let next = 1, done = 0;
+    const ctx = {
+      opts,
+      ocr: async cv => {
+        ocrPromise ||= (pText.textContent = 'Iniciando OCR…', createOcr(opts.lang, Math.min(threads, 4)));
+        ocr ||= await ocrPromise; return ocr.recognize(cv);
+      }
+    };
+    const upd = () => {
+      const el = (performance.now() - t0) / 1000, rate = done / Math.max(el, 0.001), eta = done ? (total - done) / rate : 0;
+      pBar.style.width = (100 * done / total) + '%';
+      pText.textContent = `${done} / ${total} páginas · ${rate.toFixed(1)} pág/s · ${fmtTime(el)} decorridos` + (done < total && done ? ` · ~${fmtTime(eta)} restantes` : '');
+    };
+    upd();
+    const lane = async i => {
+      const doc = i === 0 ? first : await open(i);
+      while (!state.cancel) {
+        const n = next++; if (n > total) break;
+        const page = await doc.getPage(n);
+        results[n - 1] = await analyzePage(page, n, ctx);
+        done++; upd();
+      }
+    };
+    await Promise.all(Array.from({ length: threads }, (_, i) => lane(i)));
+    if (state.cancel) throw new Error('cancelado');
+    pText.textContent = 'Montando Markdown…';
+    await new Promise(r => setTimeout(r));
+    const r = assemble(results, file.name, opts);
+    r.stats.time = (performance.now() - t0) / 1000; r.stats.threads = threads;
+    r.title = file.name.replace(/\.pdf$/i, '');
+    showResult(file, r);
+  } catch (e) {
+    if (e.message !== 'cancelado') { console.error(e); alert('Não foi possível converter este PDF: ' + (e.message || e) + '\n(Ele pode estar corrompido ou protegido por senha.)'); }
+    $('progress').classList.add('hidden');
+  } finally {
+    try { ocr && ocr.close(); } catch (e) { }
+    for (const d of docs) try { d.destroy(); } catch (e) { }
+    for (const w of workers) try { w.destroy(); } catch (e) { }
+  }
+}
 
-                    // Encerrar o worker do OCR após processar todas as páginas para liberar memória
-                    if (ocrWorker) {
-                        await ocrWorker.terminate();
-                    }
+function showResult(file, r) {
+  state.result = r; state.urls.forEach(URL.revokeObjectURL); state.urls = [];
+  $('progress').classList.add('hidden'); $('result').classList.remove('hidden');
+  $('rName').textContent = file.name;
+  const s = r.stats;
+  $('rStats').innerHTML = [`${s.pages} páginas`, `${s.figs} imagens/gráficos`, `${s.tables} tabelas`, s.ocr ? `${s.ocr} páginas com OCR` : '',
+    `${fmtTime(s.time)} (${(s.pages / s.time).toFixed(1)} pág/s, ${s.threads} núcleo${s.threads > 1 ? 's' : ''})`].filter(Boolean).map(t => `<span class="pill">${t}</span>`).join('');
+  $('out').value = r.md; $('btnZip').classList.toggle('hidden', !r.images.length);
+  showTab('md');
+}
 
-                    // Limpar formatação básica do Markdown
-                    // 1. Remover múltiplos espaços em branco excessivos
-                    markdownContent = markdownContent.replace(/[ \t]{2,}/g, ' ');
-                    // 2. Limpar múltiplas quebras de linha
-                    markdownContent = markdownContent.replace(/\n{3,}/g, '\n\n');
+function currentMd(embed) {
+  let md = $('out').value; const r = state.result;
+  if (!embed || !r.images.length) return Promise.resolve(md);
+  return Promise.all(r.images.map(im => new Promise(res => { const fr = new FileReader(); fr.onload = () => res([im.name, fr.result]); fr.readAsDataURL(im.blob); })))
+    .then(list => { for (const [n, u] of list) md = md.split('(images/' + n + ')').join('(' + u + ')'); return md; });
+}
+function download(blob, name) { const u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); }
 
-                    currentMarkdownText = markdownContent;
-                    
-                    // Exibir resultados
-                    mostrarResultado();
+async function showTab(t) {
+  $('tabMd').classList.toggle('on', t === 'md'); $('tabPv').classList.toggle('on', t === 'pv');
+  $('out').classList.toggle('hidden', t !== 'md'); $('preview').classList.toggle('hidden', t !== 'pv');
+  if (t !== 'pv') return;
+  $('preview').textContent = 'Carregando pré-visualização…';
+  try {
+    if (!window.marked) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js');
+    if (!window.DOMPurify) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js');
+    state.urls.forEach(URL.revokeObjectURL); state.urls = [];
+    let md = $('out').value;
+    for (const im of state.result.images) { const u = URL.createObjectURL(im.blob); state.urls.push(u); md = md.split('(images/' + im.name + ')').join('(' + u + ')'); }
+    $('preview').innerHTML = DOMPurify.sanitize(marked.parse(md), { ADD_URI_SAFE_ATTR: ['src'] });
+  } catch (e) { $('preview').textContent = 'Não foi possível carregar a pré-visualização: ' + e.message; }
+}
 
-                } catch (error) {
-                    console.error('Erro ao processar PDF:', error);
-                    alert('Ocorreu um erro ao tentar processar este arquivo PDF. Ele pode estar corrompido ou protegido por senha.');
-                    resetInterface();
-                }
-            }
-
-            function mostrarResultado() {
-                // Preencher o textarea
-                markdownOutput.value = currentMarkdownText;
-                
-                // Esconder seção de upload, mostrar resultados
-                dropZone.classList.add('hidden');
-                resultSection.classList.remove('hidden');
-                resultSection.classList.add('flex');
-            }
-
-            function resetInterface() {
-                fileInput.value = '';
-                
-                // Resetar UI de upload
-                loadingState.classList.add('hidden');
-                loadingState.classList.remove('flex');
-                dropZoneContent.classList.remove('hidden');
-                dropZone.classList.add('cursor-pointer', 'hover:bg-gray-50');
-                
-                // Resetar progresso
-                progressBar.style.width = '0%';
-                progressText.textContent = '0 / 0 páginas processadas';
-                
-                // Esconder resultados
-                resultSection.classList.add('hidden');
-                resultSection.classList.remove('flex');
-                dropZone.classList.remove('hidden');
-            }
-
-            // --- AÇÕES DOS BOTÕES ---
-
-            // Botão Novo Arquivo
-            btnNewFile.addEventListener('click', resetInterface);
-
-            // Botão Copiar
-            btnCopy.addEventListener('click', () => {
-                // Pegar o valor atual do textarea, caso o usuário tenha editado
-                const textoParaCopiar = markdownOutput.value;
-                
-                // Usar a API do clipboard mais antiga que funciona bem em iframes
-                const textArea = document.createElement("textarea");
-                textArea.value = textoParaCopiar;
-                // Evitar rolagem na página principal
-                textArea.style.top = "0";
-                textArea.style.left = "0";
-                textArea.style.position = "fixed";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-
-                try {
-                    const successful = document.execCommand('copy');
-                    if (successful) {
-                        // Mostrar notificação
-                        copyNotification.style.opacity = '1';
-                        setTimeout(() => {
-                            copyNotification.style.opacity = '0';
-                        }, 2000);
-                    } else {
-                        console.error('Falha ao copiar usando execCommand');
-                    }
-                } catch (err) {
-                    console.error('Erro ao copiar', err);
-                }
-                
-                document.body.removeChild(textArea);
-            });
-
-            // Botão Baixar
-            btnDownload.addEventListener('click', () => {
-                // Pegar texto atualizado caso o usuário tenha editado
-                const conteudo = markdownOutput.value;
-                
-                // Criar blob
-                const blob = new Blob([conteudo], { type: 'text/markdown;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                
-                // Criar link temporário para download
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = currentFileName;
-                
-                document.body.appendChild(link);
-                link.click();
-                
-                // Limpeza
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                }, 100);
-            });
-        });
-    </script>
+/* ================= Eventos ================= */
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') $('file').click(); };
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => pick(e.dataTransfer.files));
+$('file').onchange = e => { pick(e.target.files); e.target.value = ''; };
+function pick(files) {
+  const f = files && files[0]; if (!f) return;
+  if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') return alert('Selecione um arquivo PDF.');
+  convert(f);
+}
+$('btnCancel').onclick = () => { state.cancel = true; };
+$('tabMd').onclick = () => showTab('md'); $('tabPv').onclick = () => showTab('pv');
+$('btnCopy').onclick = async () => {
+  const md = await currentMd($('optEmbed').checked);
+  try { await navigator.clipboard.writeText(md); } catch (e) { $('out').select(); document.execCommand('copy'); }
+  toast('Markdown copiado!');
+};
+$('btnMd').onclick = async () => { const md = await currentMd($('optEmbed').checked); download(new Blob([md], { type: 'text/markdown;charset=utf-8' }), state.result.title + '.md'); };
+$('btnZip').onclick = async () => {
+  const r = state.result, enc = new TextEncoder(), files = [{ name: r.title + '.md', data: enc.encode($('out').value) }];
+  for (const im of r.images) files.push({ name: 'images/' + im.name, data: new Uint8Array(await im.blob.arrayBuffer()) });
+  download(await makeZip(files), r.title + '.zip');
+};
+</script>
 </body>
 </html>
